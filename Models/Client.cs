@@ -8,7 +8,7 @@ public class Client
     public int Id {get; set;}
 
     [Required]
-    [StringLength(4, ErrorMessage = "The name can't pass the 100 characters")]
+    [StringLength(100, ErrorMessage = "The name can't pass the 100 characters")]
     public string Name {get; set;} = string.Empty;
 
     
