@@ -1,0 +1,167 @@
+@page "/clients"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using PoCEmPRESA.Data
+@using PoCEmPRESA.Models
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject AppDbContext Db
+
+<PageTitle>Clientes</PageTitle>
+
+<EditForm Model="newClient" OnValidSubmit="AddClient">
+    <DataAnnotationsValidator/>
+
+    <div>
+        <label>Nombre:</label>
+        <InputText @bind-value="newClient.Name"/>
+        <ValidationMessage For="@(() => newClient.Name)" />
+    </div>
+
+    <div>
+        <label>Correo:</label>
+        <InputText @bind-Value="newClient.Email" />
+        <ValidationMessage For="@(() => newClient.Email)" />
+    </div>
+
+    <button type="submit">Agregar</button>
+</EditForm>
+
+@if (editingClient != null)
+{
+    <hr />
+
+    <h2>Editar cliente</h2>
+
+    <EditForm Model="editingClient" OnValidSubmit="SaveEdition">
+        <DataAnnotationsValidator />
+
+        <div>
+            <label>Nombre:</label>
+            <InputText @bind-Value="editingClient!.Name" />
+            <ValidationMessage For="@(() => editingClient!.Name)" />
+        </div>
+
+        <div>
+            <label>Correo:</label>
+            <InputText @bind-Value="editingClient!.Email" />
+            <ValidationMessage For="@(() => editingClient!.Email)" />
+        </div>
+
+        <button type="submit">Guardar cambios</button>
+        <button type="button" @onclick="CancelEdition">
+            Cancelar
+        </button>
+    </EditForm>
+}
+
+@if (clients == null)
+{
+    <p>Cargando...</p>
+}
+else if (clients.Count == 0)
+{
+    <p>No hay clientes registrados.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var client in clients)
+            {
+                <tr>
+                    <td>@client.Id</td>
+                    <td>@client.Name</td>
+                    <td>@client.Email</td>
+                    <td>
+                        <button @onclick="() => EditClient(client)">Editar</button>
+                        <button @onclick="() => DeleteClient(client.Id)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Client>? clients;
+
+    private Client newClient = new Client();
+    private Client? editingClient;
+
+    protected override async Task OnInitializedAsync()
+    {
+        clients = await Db.Clients.ToListAsync();
+    }
+
+    private async Task AddClient()
+    {
+        Db.Clients.Add(newClient);
+
+        await Db.SaveChangesAsync();
+
+        clients = await Db.Clients.ToListAsync();
+
+        newClient = new Client();
+    }
+
+    private async Task SaveEdition()
+    {
+        var client = await Db.Clients.FindAsync(editingClient!.Id);
+
+        if (client == null)
+        {
+            return;
+        }
+
+        client.Name = editingClient.Name;
+        client.Email = editingClient.Email;
+
+        await Db.SaveChangesAsync();
+
+        clients = await Db.Clients.ToListAsync();
+
+        editingClient = null;
+    }
+
+    private async Task DeleteClient(int id)
+    {
+        var client = await Db.Clients.FindAsync(id);
+
+        if (client == null)
+        {
+            return;
+        }
+
+        Db.Clients.Remove(client);
+
+        await Db.SaveChangesAsync();
+
+        clients = await Db.Clients.ToListAsync();
+    }
+
+    private void CancelEdition()
+    {
+        editingClient = null;
+    }
+
+    private void EditClient(Client client)
+    {
+        editingClient = new Client
+        {
+            Name = client.Name,
+            Email = client.Email,
+            Id = client.Id
+        };
+    }
+}
